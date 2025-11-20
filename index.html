@@ -1,11 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flappy Bird Game</title>
+<style>
+  body {
+    margin: 0;
+    background: #70c5ce;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+  canvas {
+    background: #70c5ce;
+    display: block;
+    border: 2px solid #000;
+  }
+  #restartBtn {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    font-size: 18px;
+    display: none;
+  }
+</style>
 </head>
 <body>
-    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ratione magni quidem voluptatibus incidunt ipsam, labore atque eveniet quas, vitae qui voluptate nisi consequatur laboriosam dolor nobis perspiciatis quia maiores rem. Quisquam rem, possimus iure expedita molestias doloremque facilis, nemo, optio assumenda velit porro eligendi quidem.</p>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+<button id="restartBtn">Restart Game</button>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const restartBtn = document.getElementById("restartBtn");
+
+let bird, pipes, score, gameOver, frame;
+
+// Initialize game variables
+function init() {
+    bird = { x: 50, y: 300, width: 30, height: 30, gravity: 0.6, velocity: 0, jump: -10 };
+    pipes = [];
+    score = 0;
+    frame = 0;
+    gameOver = false;
+    restartBtn.style.display = "none";
+    update();
+}
+
+// Handle jump
+document.addEventListener("keydown", () => { if(!gameOver) bird.velocity = bird.jump; });
+canvas.addEventListener("click", () => { if(!gameOver) bird.velocity = bird.jump; });
+
+// Pipe settings
+const pipeWidth = 60;
+const pipeGap = 150;
+
+// Game loop
+function update() {
+    if(gameOver) return;
+
+    frame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Bird physics
+    bird.velocity += bird.gravity;
+    bird.y += bird.velocity;
+
+    // Draw bird
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+    // Generate pipes every 90 frames
+    if(frame % 90 === 0){
+        const pipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap - 40)) + 20;
+        pipes.push({ x: canvas.width, y: 0, width: pipeWidth, height: pipeHeight });
+        pipes.push({ x: canvas.width, y: pipeHeight + pipeGap, width: pipeWidth, height: canvas.height - pipeHeight - pipeGap });
+    }
+
+    // Draw and move pipes
+    ctx.fillStyle = "green";
+    for(let i = pipes.length - 1; i >= 0; i--){
+        const p = pipes[i];
+        p.x -= 2;
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+
+        // Collision detection
+        if(bird.x < p.x + p.width && bird.x + bird.width > p.x &&
+           bird.y < p.y + p.height && bird.y + bird.height > p.y){
+            endGame();
+        }
+
+        // Increment score when bird passes a pipe
+        if(!p.scored && p.x + p.width < bird.x){
+            p.scored = true;
+            score += (i % 2 === 0) ? 0 : 1; // Only count bottom pipe once
+        }
+
+        // Remove offscreen pipes
+        if(p.x + p.width < 0){
+            pipes.splice(i,1);
+        }
+    }
+
+    // Ground collision
+    if(bird.y + bird.height > canvas.height){
+        endGame();
+    }
+
+    // Display score
+    ctx.fillStyle = "white";
+    ctx.font = "30px Arial";
+    ctx.fillText("Score: " + score, 10, 40);
+
+    if(!gameOver){
+        requestAnimationFrame(update);
+    }
+}
+
+// End game
+function endGame() {
+    gameOver = true;
+    ctx.fillStyle = "red";
+    ctx.font = "50px Arial";
+    ctx.fillText("Game Over", 60, canvas.height/2);
+    restartBtn.style.display = "block";
+}
+
+// Restart button
+restartBtn.addEventListener("click", () => {
+    init();
+});
+
+// Start the game
+init();
+</script>
+
 </body>
 </html>
