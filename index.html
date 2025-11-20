@@ -3,9 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Floppy Bird</title>
+    
+    <style>
+        /* --- CSS STYLES --- */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        #game-container {
+            width: 400px;
+            height: 600px;
+            background-color: #70c5ce; /* Sky color */
+            border: 3px solid #333;
+            position: relative;
+            overflow: hidden; 
+            cursor: pointer;
+        }
+
+        #bird {
+            width: 30px;
+            height: 30px;
+            background-color: gold;
+            border: 2px solid orange;
+            border-radius: 50%;
+            position: absolute;
+            left: 50px;
+            top: 250px;
+            z-index: 5;
+        }
+
+        .pipe {
+            position: absolute;
+            width: 50px;
+            background-color: #74bf2e; /* Pipe color */
+            border: 2px solid #000;
+            z-index: 1;
+        }
+
+        .pipe-top {
+            border-bottom: none;
+            top: 0;
+        }
+
+        .pipe-bottom {
+            border-top: none;
+            bottom: 0;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 10;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 20px;
+            text-align: center;
+            z-index: 20;
+        }
+    </style>
 </head>
 <body>
-    <p>Hello World</p>
+    <div id="game-container">
+        <div id="bird"></div>
+        <div id="score">0</div>
+        <div id="message">Click or Press Space to Start</div>
+    </div>
+
+    <script>
+        // --- JAVASCRIPT LOGIC ---
+        const gameContainer = document.getElementById('game-container');
+        const bird = document.getElementById('bird');
+        const scoreDisplay = document.getElementById('score');
+        const message = document.getElementById('message');
+
+        const GAME_WIDTH = 400;
+        const GAME_HEIGHT = 600;
+        const BIRD_SIZE = 30;
+        const PIPE_WIDTH = 50;
+        const PIPE_GAP = 150; // Vertical gap size
+
+        let birdY = 250;
+        let birdVelocity = 0;
+        const GRAVITY = 0.5;
+        const JUMP_FORCE = -9;
+        const PIPE_SPEED = 3;
+
+        let score = 0;
+        let isGameOver = true;
+        let gameLoopInterval;
+        let pipeGenerationInterval;
+
+        // --- Game Functions ---
+
+        function startGame() {
+            if (!isGameOver) return;
+            
+            // Reset state
+            isGameOver = false;
+            birdY = 250;
+            bird.style.top = `${birdY}px`;
+            birdVelocity = 0;
+            score = 0;
+            scoreDisplay.textContent = score;
+            message.style.display = 'none';
+
+            // Clear old pipes
+            document.querySelectorAll('.pipe').forEach(pipe => pipe.remove());
+
+            // Start game loops
+            gameLoopInterval = setInterval(gameLoop, 20); // 50 FPS
+            pipeGenerationInterval = setInterval(generatePipe, 2000); // New pipe every 2 seconds
+        }
+
+        function gameOver() {
+            clearInterval(gameLoopInterval);
+            clearInterval(pipeGenerationInterval);
+            isGameOver = true;
+            message.textContent = `Game Over! Score: ${score}. Click or Press Space to restart.`;
+            message.style.display = 'block';
+        }
+
+        function jump() {
+            if (isGameOver) {
+                startGame(); // Start game on first input
+            } else {
+                birdVelocity = JUMP_FORCE;
+            }
+        }
+
+        // --- Pipe Management ---
+
+        function generatePipe() {
+            // Random height for the top pipe
+            const minHeight = 50;
+            const maxHeight = GAME_HEIGHT - PIPE_GAP - minHeight;
+            const topPipeHeight = Math.floor(Math.random() * maxHeight) + minHeight; 
+            const bottomPipeHeight = GAME_HEIGHT - topPipeHeight - PIPE_GAP;
+
+            // Create top pipe
+            const topPipe = document.createElement('div');
+            topPipe.classList.add('pipe', 'pipe-top');
+            topPipe.style.height = `${topPipeHeight}px`;
+            topPipe.style.left = `${GAME_WIDTH}px`;
+            gameContainer.appendChild(topPipe);
+
+            // Create bottom pipe
+            const bottomPipe = document.createElement('div');
+            bottomPipe.classList.add('pipe', 'pipe-bottom');
+            bottomPipe.style.height = `${bottomPipeHeight}px`;
+            bottomPipe.style.left = `${GAME_WIDTH}px`;
+            gameContainer.appendChild(bottomPipe);
+        }
+
+        function movePipes() {
+            document.querySelectorAll('.pipe').forEach(pipe => {
+                let pipeX = parseFloat(pipe.style.left);
+                pipeX -= PIPE_SPEED; 
+
+                pipe.style.left = `${pipeX}px`;
+
+                // Check for scoring (only once per pipe pair)
+                // Score is updated when the pipe's right edge passes the bird's x-position (50px)
+                if (pipeX + PIPE_WIDTH < 50 && pipeX + PIPE_WIDTH + PIPE_SPEED >= 50 && pipe.classList.contains('pipe-top')) {
+                    score++;
+                    scoreDisplay.textContent = score;
+                }
+
+                // Remove pipe when it goes off-screen
+                if (pipeX < -PIPE_WIDTH) {
+                    pipe.remove();
+                }
+            });
+        }
+
+        // --- Collision Detection ---
+
+        function checkCollisions() {
+            const birdRect = bird.getBoundingClientRect();
+            
+            // 1. Collision with Ground/Ceiling
+            if (birdY > GAME_HEIGHT - BIRD_SIZE || birdY < 0) {
+                gameOver();
+                return;
+            }
+
+            // 2. Collision with Pipes
+            document.querySelectorAll('.pipe').forEach(pipe => {
+                const pipeX = parseFloat(pipe.style.left);
+                const pipeHeight = parseFloat(pipe.style.height);
+
+                // Check if the pipe is horizontally aligned with the bird
+                if (pipeX < 50 + BIRD_SIZE && pipeX + PIPE_WIDTH > 50) {
+                    let isColliding = false;
+                    
+                    if (pipe.classList.contains('pipe-top')) {
+                        // Check collision with top pipe
+                        if (birdY < pipeHeight) {
+                            isColliding = true;
+                        }
+                    } else {
+                        // Check collision with bottom pipe
+                        const bottomPipeY = GAME_HEIGHT - pipeHeight;
+                        if (birdY + BIRD_SIZE > bottomPipeY) {
+                            isColliding = true;
+                        }
+                    }
+
+                    if (isColliding) {
+                        gameOver();
+                    }
+                }
+            });
+        }
+
+        // --- Main Game Loop ---
+
+        function gameLoop() {
+            // Apply gravity
+            birdVelocity += GRAVITY;
+            birdY += birdVelocity;
+
+            // Update bird position and rotation
+            bird.style.top = `${birdY}px`;
+            
+            // Rotate the bird based on its velocity/angle of dive (max 90 degrees down)
+            let rotation = Math.min(90, birdVelocity * 6);
+            bird.style.transform = `rotate(${rotation}deg)`;
+
+            movePipes();
+            checkCollisions();
+        }
+
+        // --- Event Listeners ---
+        gameContainer.addEventListener('click', jump);
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault(); // Prevent scrolling when pressing space
+                jump();
+            }
+        });
+    </script>
 </body>
 </html>
