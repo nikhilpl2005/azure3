@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird</title>
+    <title>Combat Zone - FPS</title>
     <style>
         * {
             margin: 0;
@@ -12,102 +12,152 @@
         }
 
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(to bottom, #4ec0ca 0%, #87ceeb 100%);
             font-family: 'Arial', sans-serif;
-        }
-
-        #gameContainer {
-            position: relative;
-            width: 400px;
-            height: 600px;
-            background: linear-gradient(to bottom, #4ec0ca 0%, #87ceeb 70%, #ded895 70%, #ded895 100%);
-            border: 3px solid #333;
+            background: #000;
             overflow: hidden;
-            cursor: pointer;
+            cursor: crosshair;
         }
 
-        #bird {
-            position: absolute;
-            width: 40px;
-            height: 30px;
-            background: #ff6b6b;
-            border-radius: 50%;
-            left: 80px;
-            transition: transform 0.1s;
+        #gameCanvas {
+            display: block;
+            background: #1a1a1a;
         }
 
-        #bird::before {
-            content: '';
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            background: #ff8787;
-            border-radius: 50%;
-            top: -5px;
-            left: 5px;
-        }
-
-        #bird::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 10px;
-            background: #ffa500;
-            right: -15px;
-            top: 10px;
-            clip-path: polygon(0 50%, 100% 0, 100% 100%);
-        }
-
-        .pipe {
-            position: absolute;
-            width: 60px;
-            background: #5cb85c;
-            border: 3px solid #2d5c2d;
-            border-radius: 5px;
-        }
-
-        .pipe::before {
-            content: '';
-            position: absolute;
-            width: 70px;
-            height: 30px;
-            background: #5cb85c;
-            border: 3px solid #2d5c2d;
-            left: -8px;
-            border-radius: 5px;
-        }
-
-        .pipe-top::before {
-            bottom: -3px;
-        }
-
-        .pipe-bottom::before {
-            top: -3px;
-        }
-
-        #score {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 48px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 3px 3px 0 #000;
-            z-index: 10;
-        }
-
-        #startScreen, #gameOverScreen {
+        .hud {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            pointer-events: none;
+            color: white;
+            font-weight: bold;
+        }
+
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .crosshair::before {
+            width: 20px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair::after {
+            width: 2px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .health-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 250px;
+        }
+
+        .health-label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .health-container {
+            width: 100%;
+            height: 30px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00);
+            transition: width 0.3s;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .ammo-display {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            text-align: right;
+        }
+
+        .ammo-count {
+            font-size: 48px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            color: #00ff00;
+        }
+
+        .ammo-label {
+            font-size: 16px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .score-display {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            text-align: right;
+        }
+
+        .kills {
+            font-size: 36px;
+            color: #ff6b6b;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .wave {
+            font-size: 18px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            margin-top: 5px;
+        }
+
+        .damage-indicator {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 5px solid red;
+            opacity: 0;
+            pointer-events: none;
+            animation: damageFlash 0.3s;
+        }
+
+        @keyframes damageFlash {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.7; }
+        }
+
+        .menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.95));
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -115,217 +165,571 @@
             z-index: 100;
         }
 
-        #startScreen h1, #gameOverScreen h1 {
-            color: white;
-            font-size: 48px;
+        .menu h1 {
+            font-size: 72px;
+            color: #00ff00;
+            text-shadow: 0 0 20px #00ff00;
             margin-bottom: 20px;
-            text-shadow: 3px 3px 0 #000;
+            letter-spacing: 4px;
         }
 
-        #startScreen p, #gameOverScreen p {
-            color: white;
+        .menu p {
             font-size: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-            text-shadow: 2px 2px 0 #000;
-        }
-
-        #finalScore {
-            color: #ffd700;
-            font-size: 36px;
-            font-weight: bold;
+            color: #fff;
             margin: 10px 0;
-            text-shadow: 2px 2px 0 #000;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
-        button {
-            padding: 15px 40px;
+        .controls {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0,255,0,0.1);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+        }
+
+        .controls p {
+            font-size: 16px;
+            margin: 8px 0;
+        }
+
+        .btn {
+            padding: 20px 60px;
             font-size: 24px;
-            background: #ff6b6b;
-            color: white;
+            font-weight: bold;
+            color: #000;
+            background: #00ff00;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 5px 0 #cc5555;
-            transition: all 0.1s;
+            margin: 10px;
+            box-shadow: 0 0 20px #00ff00;
+            transition: all 0.3s;
         }
 
-        button:hover {
-            background: #ff8787;
-            transform: translateY(-2px);
-            box-shadow: 0 7px 0 #cc5555;
+        .btn:hover {
+            background: #00ff88;
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #00ff00;
         }
 
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 0 3px 0 #cc5555;
+        .game-over {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .game-over h1 {
+            font-size: 64px;
+            color: #ff0000;
+            text-shadow: 0 0 20px #ff0000;
+            margin-bottom: 30px;
+        }
+
+        .stats {
+            font-size: 24px;
+            color: #fff;
+            margin: 10px 0;
+        }
+
+        .reload-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00;
+            display: none;
+        }
+
+        .hit-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: #ff0000;
+            text-shadow: 0 0 20px #ff0000;
+            display: none;
+            animation: hitMarkerAnim 0.2s;
+        }
+
+        @keyframes hitMarkerAnim {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+
+        .minimap {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+        }
+
+        .hide {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="score">0</div>
-        <div id="bird"></div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="hud">
+        <div class="crosshair"></div>
         
-        <div id="startScreen">
-            <h1>Flappy Bird</h1>
-            <p>Click or press Space to flap<br>Avoid the pipes!</p>
-            <button onclick="startGame()">Start Game</button>
+        <div class="minimap" id="minimap"></div>
+        
+        <div class="score-display">
+            <div class="kills" id="kills">KILLS: 0</div>
+            <div class="wave" id="wave">WAVE: 1</div>
         </div>
         
-        <div id="gameOverScreen" style="display: none;">
-            <h1>Game Over!</h1>
-            <p>Your Score:</p>
-            <div id="finalScore">0</div>
-            <button onclick="restartGame()">Play Again</button>
+        <div class="health-bar">
+            <div class="health-label">HEALTH</div>
+            <div class="health-container">
+                <div class="health-fill" id="healthFill" style="width: 100%"></div>
+            </div>
         </div>
+        
+        <div class="ammo-display">
+            <div class="ammo-count" id="ammoCount">30 / 90</div>
+            <div class="ammo-label">RIFLE AMMO</div>
+        </div>
+        
+        <div class="reload-indicator" id="reloadIndicator">RELOADING...</div>
+        <div class="hit-marker" id="hitMarker">✕</div>
+    </div>
+    
+    <div class="menu" id="menu">
+        <h1>COMBAT ZONE</h1>
+        <p>Survive waves of enemies in this intense FPS shooter!</p>
+        <div class="controls">
+            <p>🎮 <strong>CONTROLS:</strong></p>
+            <p>🖱️ Click to SHOOT</p>
+            <p>⌨️ R to RELOAD</p>
+            <p>🎯 Aim with your mouse</p>
+            <p>💀 Survive as long as you can!</p>
+        </div>
+        <button class="btn" id="startBtn">START MISSION</button>
+    </div>
+    
+    <div class="game-over" id="gameOver">
+        <h1>MISSION FAILED</h1>
+        <div class="stats" id="finalKills">Enemies Eliminated: 0</div>
+        <div class="stats" id="finalWave">Waves Survived: 0</div>
+        <button class="btn" id="restartBtn">RESTART MISSION</button>
     </div>
 
     <script>
-        const gameContainer = document.getElementById('gameContainer');
-        const bird = document.getElementById('bird');
-        const scoreDisplay = document.getElementById('score');
-        const startScreen = document.getElementById('startScreen');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const finalScore = document.getElementById('finalScore');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
 
-        let birdY = 250;
-        let birdVelocity = 0;
-        let gravity = 0.5;
-        let jumpStrength = -9;
-        let isGameRunning = false;
-        let score = 0;
-        let pipes = [];
-        let gameLoop;
-        let pipeInterval;
+        const menu = document.getElementById('menu');
+        const gameOverScreen = document.getElementById('gameOver');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const healthFill = document.getElementById('healthFill');
+        const ammoCount = document.getElementById('ammoCount');
+        const killsDisplay = document.getElementById('kills');
+        const waveDisplay = document.getElementById('wave');
+        const reloadIndicator = document.getElementById('reloadIndicator');
+        const hitMarker = document.getElementById('hitMarker');
+        const finalKills = document.getElementById('finalKills');
+        const finalWave = document.getElementById('finalWave');
+        const minimap = document.getElementById('minimap');
+
+        let gameActive = false;
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        
+        const player = {
+            health: 100,
+            ammo: 30,
+            maxAmmo: 30,
+            reserveAmmo: 90,
+            reloading: false,
+            kills: 0,
+            wave: 1
+        };
+
+        const enemies = [];
+        const bullets = [];
+        const particles = [];
+        
+        let enemySpawnTimer = 0;
+        let waveEnemyCount = 5;
+        let enemiesKilledThisWave = 0;
+
+        class Enemy {
+            constructor() {
+                const side = Math.floor(Math.random() * 4);
+                if (side === 0) {
+                    this.x = Math.random() * canvas.width;
+                    this.y = -50;
+                } else if (side === 1) {
+                    this.x = canvas.width + 50;
+                    this.y = Math.random() * canvas.height;
+                } else if (side === 2) {
+                    this.x = Math.random() * canvas.width;
+                    this.y = canvas.height + 50;
+                } else {
+                    this.x = -50;
+                    this.y = Math.random() * canvas.height;
+                }
+                
+                this.width = 40;
+                this.height = 60;
+                this.speed = 1 + Math.random() * 1.5;
+                this.health = 100;
+                this.angle = 0;
+                this.distance = Math.sqrt(Math.pow(canvas.width/2 - this.x, 2) + Math.pow(canvas.height/2 - this.y, 2));
+            }
+
+            update() {
+                const dx = canvas.width / 2 - this.x;
+                const dy = canvas.height / 2 - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                this.x += (dx / distance) * this.speed;
+                this.y += (dy / distance) * this.speed;
+                this.angle = Math.atan2(dy, dx);
+                this.distance = distance;
+
+                if (distance < 100 && gameActive) {
+                    player.health -= 0.5;
+                    updateHealth();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                const scale = Math.max(0.3, 1 - this.distance / 1500);
+                ctx.scale(scale, scale);
+                
+                ctx.fillStyle = '#ff4444';
+                ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+                
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(-this.width/2 + 5, -this.height/2 + 5, this.width - 10, 15);
+                
+                ctx.fillStyle = '#000';
+                ctx.fillRect(-this.width/2 + 10, -this.height/2 + 10, 8, 8);
+                ctx.fillRect(this.width/2 - 18, -this.height/2 + 10, 8, 8);
+                
+                ctx.fillStyle = '#8b0000';
+                ctx.fillRect(-this.width/2, this.height/2 - 20, this.width, 20);
+                
+                ctx.restore();
+                
+                ctx.fillStyle = '#000';
+                ctx.fillRect(this.x - 25, this.y - this.height/2 - 15, 50, 8);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(this.x - 24, this.y - this.height/2 - 14, (this.health / 100) * 48, 6);
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, targetX, targetY) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.atan2(targetY - y, targetX - x);
+                this.vx = Math.cos(angle) * 15;
+                this.vy = Math.sin(angle) * 15;
+                this.life = 100;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+            }
+
+            draw() {
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.life = 30;
+                this.color = color;
+                this.size = Math.random() * 4 + 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2;
+                this.life--;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life / 30;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function shoot() {
+            if (!gameActive || player.reloading) return;
+            
+            if (player.ammo > 0) {
+                player.ammo--;
+                bullets.push(new Bullet(canvas.width / 2, canvas.height / 2, mouseX, mouseY));
+                updateAmmo();
+                
+                for (let i = 0; i < 3; i++) {
+                    particles.push(new Particle(canvas.width / 2, canvas.height / 2, '#ffff00'));
+                }
+            }
+        }
+
+        function reload() {
+            if (player.reloading || player.ammo === player.maxAmmo || player.reserveAmmo === 0) return;
+            
+            player.reloading = true;
+            reloadIndicator.style.display = 'block';
+            
+            setTimeout(() => {
+                const ammoNeeded = player.maxAmmo - player.ammo;
+                const ammoToReload = Math.min(ammoNeeded, player.reserveAmmo);
+                
+                player.ammo += ammoToReload;
+                player.reserveAmmo -= ammoToReload;
+                player.reloading = false;
+                reloadIndicator.style.display = 'none';
+                updateAmmo();
+            }, 1500);
+        }
+
+        function updateHealth() {
+            healthFill.style.width = player.health + '%';
+            
+            if (player.health <= 0) {
+                endGame();
+            } else if (player.health < 30) {
+                const indicator = document.createElement('div');
+                indicator.className = 'damage-indicator';
+                document.body.appendChild(indicator);
+                setTimeout(() => indicator.remove(), 300);
+            }
+        }
+
+        function updateAmmo() {
+            ammoCount.textContent = `${player.ammo} / ${player.reserveAmmo}`;
+        }
+
+        function spawnEnemy() {
+            enemies.push(new Enemy());
+        }
+
+        function checkCollisions() {
+            bullets.forEach((bullet, bIndex) => {
+                enemies.forEach((enemy, eIndex) => {
+                    const dx = bullet.x - enemy.x;
+                    const dy = bullet.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 30) {
+                        enemy.health -= 34;
+                        bullets.splice(bIndex, 1);
+                        
+                        hitMarker.style.display = 'block';
+                        setTimeout(() => hitMarker.style.display = 'none', 200);
+                        
+                        for (let i = 0; i < 10; i++) {
+                            particles.push(new Particle(enemy.x, enemy.y, '#ff0000'));
+                        }
+                        
+                        if (enemy.health <= 0) {
+                            enemies.splice(eIndex, 1);
+                            player.kills++;
+                            enemiesKilledThisWave++;
+                            killsDisplay.textContent = `KILLS: ${player.kills}`;
+                            
+                            for (let i = 0; i < 20; i++) {
+                                particles.push(new Particle(enemy.x, enemy.y, '#ff0000'));
+                            }
+                            
+                            if (enemiesKilledThisWave >= waveEnemyCount) {
+                                nextWave();
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function nextWave() {
+            player.wave++;
+            waveEnemyCount += 3;
+            enemiesKilledThisWave = 0;
+            waveDisplay.textContent = `WAVE: ${player.wave}`;
+            
+            player.reserveAmmo += 60;
+            updateAmmo();
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            const gridSize = 50;
+            
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawMinimap() {
+            const minimapCtx = minimap.getContext('2d');
+            if (!minimapCtx) return;
+            
+            minimapCtx.fillStyle = 'rgba(0,0,0,0.7)';
+            minimapCtx.fillRect(0, 0, 150, 150);
+            
+            minimapCtx.fillStyle = '#00ff00';
+            minimapCtx.fillRect(72, 72, 6, 6);
+            
+            enemies.forEach(enemy => {
+                const x = (enemy.x / canvas.width) * 150;
+                const y = (enemy.y / canvas.height) * 150;
+                minimapCtx.fillStyle = '#ff0000';
+                minimapCtx.fillRect(x - 2, y - 2, 4, 4);
+            });
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            drawBackground();
+            
+            enemySpawnTimer++;
+            if (enemySpawnTimer > 60 && enemies.length < waveEnemyCount) {
+                spawnEnemy();
+                enemySpawnTimer = 0;
+            }
+            
+            enemies.forEach(enemy => {
+                enemy.update();
+                enemy.draw();
+            });
+            
+            bullets.forEach((bullet, index) => {
+                bullet.update();
+                bullet.draw();
+                if (bullet.life <= 0) bullets.splice(index, 1);
+            });
+            
+            particles.forEach((particle, index) => {
+                particle.update();
+                particle.draw();
+                if (particle.life <= 0) particles.splice(index, 1);
+            });
+            
+            checkCollisions();
+            drawMinimap();
+            
+            requestAnimationFrame(gameLoop);
+        }
 
         function startGame() {
-            startScreen.style.display = 'none';
-            isGameRunning = true;
-            birdY = 250;
-            birdVelocity = 0;
-            score = 0;
-            pipes = [];
-            scoreDisplay.textContent = score;
+            player.health = 100;
+            player.ammo = 30;
+            player.reserveAmmo = 90;
+            player.kills = 0;
+            player.wave = 1;
+            player.reloading = false;
+            enemies.length = 0;
+            bullets.length = 0;
+            particles.length = 0;
+            enemySpawnTimer = 0;
+            waveEnemyCount = 5;
+            enemiesKilledThisWave = 0;
             
-            gameLoop = setInterval(updateGame, 20);
-            pipeInterval = setInterval(createPipe, 2000);
-            createPipe();
-        }
-
-        function restartGame() {
+            updateHealth();
+            updateAmmo();
+            killsDisplay.textContent = 'KILLS: 0';
+            waveDisplay.textContent = 'WAVE: 1';
+            
+            menu.classList.add('hide');
             gameOverScreen.style.display = 'none';
-            startGame();
-        }
-
-        function createPipe() {
-            const gap = 180;
-            const minHeight = 50;
-            const maxHeight = 350;
-            const topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+            gameActive = true;
             
-            const pipeTop = document.createElement('div');
-            pipeTop.className = 'pipe pipe-top';
-            pipeTop.style.height = topHeight + 'px';
-            pipeTop.style.top = '0';
-            pipeTop.style.right = '0';
-            
-            const pipeBottom = document.createElement('div');
-            pipeBottom.className = 'pipe pipe-bottom';
-            pipeBottom.style.height = (600 - topHeight - gap - 100) + 'px';
-            pipeBottom.style.bottom = '100px';
-            pipeBottom.style.right = '0';
-            
-            gameContainer.appendChild(pipeTop);
-            gameContainer.appendChild(pipeBottom);
-            
-            pipes.push({
-                top: pipeTop,
-                bottom: pipeBottom,
-                x: 400,
-                scored: false
-            });
-        }
-
-        function updateGame() {
-            if (!isGameRunning) return;
-            
-            birdVelocity += gravity;
-            birdY += birdVelocity;
-            bird.style.top = birdY + 'px';
-            
-            const rotation = Math.min(Math.max(birdVelocity * 3, -30), 90);
-            bird.style.transform = `rotate(${rotation}deg)`;
-            
-            if (birdY > 520 || birdY < 0) {
-                endGame();
-                return;
-            }
-            
-            pipes.forEach((pipe, index) => {
-                pipe.x -= 3;
-                pipe.top.style.right = (400 - pipe.x) + 'px';
-                pipe.bottom.style.right = (400 - pipe.x) + 'px';
-                
-                if (pipe.x < -60) {
-                    pipe.top.remove();
-                    pipe.bottom.remove();
-                    pipes.splice(index, 1);
-                }
-                
-                if (!pipe.scored && pipe.x < 80) {
-                    pipe.scored = true;
-                    score++;
-                    scoreDisplay.textContent = score;
-                }
-                
-                const birdLeft = 80;
-                const birdRight = 120;
-                const birdTop = birdY;
-                const birdBottom = birdY + 30;
-                
-                const pipeLeft = pipe.x;
-                const pipeRight = pipe.x + 60;
-                
-                if (birdRight > pipeLeft && birdLeft < pipeRight) {
-                    const topPipeHeight = parseInt(pipe.top.style.height);
-                    const bottomPipeTop = 600 - parseInt(pipe.bottom.style.height) - 100;
-                    
-                    if (birdTop < topPipeHeight || birdBottom > bottomPipeTop) {
-                        endGame();
-                    }
-                }
-            });
-        }
-
-        function jump() {
-            if (isGameRunning) {
-                birdVelocity = jumpStrength;
-            }
+            gameLoop();
         }
 
         function endGame() {
-            isGameRunning = false;
-            clearInterval(gameLoop);
-            clearInterval(pipeInterval);
-            finalScore.textContent = score;
+            gameActive = false;
+            finalKills.textContent = `Enemies Eliminated: ${player.kills}`;
+            finalWave.textContent = `Waves Survived: ${player.wave}`;
             gameOverScreen.style.display = 'flex';
-            
-            pipes.forEach(pipe => {
-                pipe.top.remove();
-                pipe.bottom.remove();
-            });
         }
 
-        gameContainer.addEventListener('click', jump);
+        canvas.addEventListener('click', shoot);
+        
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
         
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                jump();
+            if (e.key === 'r' || e.key === 'R') {
+                reload();
             }
         });
+
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
     </script>
 </body>
 </html>
