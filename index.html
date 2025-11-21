@@ -4,11 +4,30 @@
 <title>Car Dodge Runner</title>
 <meta charset="UTF-8">
 <style>
-    body { margin:0; overflow:hidden; background:#111; }
-    canvas { display:block; background:#222; }
+    body {
+        margin:0;
+        overflow:hidden;
+        background: linear-gradient(120deg, #ff0000, #222, #333);
+        animation: gradientMove 8s infinite alternate;
+        background-size: 200% 200%;
+    }
+
+    /* Gradient animation */
+    @keyframes gradientMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    canvas {
+        display:block;
+        background: transparent; /* canvas is clear, body shows gradient */
+    }
+
     #score {
         position:fixed; top:20px; left:20px;
         font-size:28px; color:white; font-family:Arial;
+        text-shadow: 0px 0px 5px black;
     }
 </style>
 </head>
@@ -47,10 +66,9 @@ let score = 0;
 let alive = true;
 let paused = false;
 
-// Car Colors
-let carColors = ["red", "yellow", "orange", "lime", "cyan", "purple"];
+let carColors = ["#ff4d4d", "#ffa31a", "#ffff1a", "#4dff4d", "#1affff", "#b31aff"];
 
-// Handle key presses
+// Key Controls
 document.addEventListener("keydown", e => {
     if (e.code === "KeyP") paused = !paused;
     if (!alive || paused) return;
@@ -59,7 +77,7 @@ document.addEventListener("keydown", e => {
     if (e.code === "ArrowRight" && targetLane < 2) targetLane++;
 });
 
-// Spawn cars
+// Spawn Cars
 setInterval(() => {
     if (!alive || paused) return;
 
@@ -73,22 +91,22 @@ setInterval(() => {
     });
 }, 700);
 
-// Smooth Player Movement
+// Smooth Player Move
 function updatePlayerPosition() {
     let targetX = laneX[targetLane];
     playerX += (targetX - playerX) * switchSpeed;
 }
 
-// Draw Player Car
+// Draw Player
 function drawPlayer() {
-    ctx.fillStyle = "cyan";
+    ctx.fillStyle = "#00e6e6";
     ctx.fillRect(playerX - 45, playerY, 90, 130);
 
     ctx.fillStyle = "black";
     ctx.fillRect(playerX - 25, playerY + 20, 50, 90);
 }
 
-// Draw Car Obstacles
+// Draw Cars
 function drawObstacles() {
     obstacles.forEach(o => {
         ctx.fillStyle = o.color;
@@ -104,7 +122,6 @@ function updateObstacles() {
     obstacles.forEach(o => {
         o.y += o.speed;
 
-        // Collision detection
         if (o.lane === targetLane &&
             o.y + o.height > playerY &&
             o.y < playerY + 130) {
@@ -115,7 +132,7 @@ function updateObstacles() {
     obstacles = obstacles.filter(o => o.y < canvas.height + 300);
 }
 
-// Draw Pause Screen
+// Pause Screen
 function drawPauseScreen() {
     ctx.fillStyle = "rgba(0,0,0,0.5)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -125,7 +142,7 @@ function drawPauseScreen() {
     ctx.fillText("PAUSED", canvas.width/2 - 140, canvas.height/2);
 }
 
-// Game Over Screen
+// Game Over
 function gameOver() {
     ctx.fillStyle = "rgba(0,0,0,0.7)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -135,7 +152,7 @@ function gameOver() {
     ctx.fillText("GAME OVER", canvas.width/2 - 180, canvas.height/2);
 }
 
-// Main Loop
+// Game Loop
 function loop() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -166,7 +183,7 @@ function loop() {
         drawObstacles();
         updateObstacles();
 
-        // Increase difficulty slowly
+        // Difficulty increases
         speed += 0.002;
 
         score++;
