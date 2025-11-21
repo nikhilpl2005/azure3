@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Mini Subway Surfers</title>
+<title>Car Dodge Runner</title>
 <meta charset="UTF-8">
 <style>
     body { margin:0; overflow:hidden; background:#111; }
@@ -19,100 +19,158 @@
 
 <script>
 /* -----------------------------------------
-      SIMPLE SUBWAY SURFERS STYLE GAME
+         IMPROVED CAR-DODGE GAME
 -------------------------------------------*/
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-let laneX = [canvas.width/2 - 150, canvas.width/2, canvas.width/2 + 150];
+// 3 Road Lanes
+let laneX = [
+    canvas.width/2 - 150,
+    canvas.width/2,
+    canvas.width/2 + 150
+];
+
 let playerLane = 1;
+let targetLane = 1;
 let playerY = canvas.height - 160;
+let playerX = laneX[1];
+let switchSpeed = 0.2;
 
 let obstacles = [];
-let speed = 8;
+let speed = 7;
 let score = 0;
 let alive = true;
+let paused = false;
+
+// Car Colors
+let carColors = ["red", "yellow", "orange", "lime", "cyan", "purple"];
 
 // Handle key presses
 document.addEventListener("keydown", e => {
-    if (!alive) return;
+    if (e.code === "KeyP") paused = !paused;
+    if (!alive || paused) return;
 
-    if (e.code === "ArrowLeft" && playerLane > 0) playerLane--;
-    if (e.code === "ArrowRight" && playerLane < 2) playerLane++;
+    if (e.code === "ArrowLeft" && targetLane > 0) targetLane--;
+    if (e.code === "ArrowRight" && targetLane < 2) targetLane++;
 });
 
-// Spawn obstacles every second
+// Spawn cars
 setInterval(() => {
-    if (!alive) return;
+    if (!alive || paused) return;
 
     obstacles.push({
         lane: Math.floor(Math.random()*3),
-        y: -200
+        y: -200,
+        color: carColors[Math.floor(Math.random()*carColors.length)],
+        height: 140,
+        width: 90,
+        speed: speed + Math.random()*3
     });
-}, 900);
+}, 700);
 
+// Smooth Player Movement
+function updatePlayerPosition() {
+    let targetX = laneX[targetLane];
+    playerX += (targetX - playerX) * switchSpeed;
+}
+
+// Draw Player Car
 function drawPlayer() {
     ctx.fillStyle = "cyan";
-    ctx.fillRect(laneX[playerLane] - 50, playerY, 100, 120);
+    ctx.fillRect(playerX - 45, playerY, 90, 130);
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(playerX - 25, playerY + 20, 50, 90);
 }
 
+// Draw Car Obstacles
 function drawObstacles() {
-    ctx.fillStyle = "red";
     obstacles.forEach(o => {
-        ctx.fillRect(laneX[o.lane] - 50, o.y, 100, 120);
+        ctx.fillStyle = o.color;
+        ctx.fillRect(laneX[o.lane] - 45, o.y, o.width, o.height);
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(laneX[o.lane] - 25, o.y + 25, 50, o.height - 50);
     });
 }
 
+// Update Cars
 function updateObstacles() {
     obstacles.forEach(o => {
-        o.y += speed;
+        o.y += o.speed;
 
-        // Collision
-        if (o.lane === playerLane &&
-            o.y + 120 > playerY &&
-            o.y < playerY + 120) {
+        // Collision detection
+        if (o.lane === targetLane &&
+            o.y + o.height > playerY &&
+            o.y < playerY + 130) {
                 alive = false;
         }
     });
 
-    obstacles = obstacles.filter(o => o.y < canvas.height + 200);
+    obstacles = obstacles.filter(o => o.y < canvas.height + 300);
 }
 
+// Draw Pause Screen
+function drawPauseScreen() {
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.font = "70px Arial";
+    ctx.fillText("PAUSED", canvas.width/2 - 140, canvas.height/2);
+}
+
+// Game Over Screen
 function gameOver() {
     ctx.fillStyle = "rgba(0,0,0,0.7)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
+
     ctx.fillStyle = "white";
     ctx.font = "60px Arial";
     ctx.fillText("GAME OVER", canvas.width/2 - 180, canvas.height/2);
 }
 
+// Main Loop
 function loop() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    if (alive) {
-        // Road
+    if (!alive) {
+        gameOver();
+    }
+    else if (paused) {
+        drawPauseScreen();
+    }
+    else {
+        // Road Lines
         ctx.strokeStyle = "white";
         ctx.lineWidth = 6;
+
         ctx.beginPath();
         ctx.moveTo(canvas.width/2 - 150, 0);
         ctx.lineTo(canvas.width/2 - 150, canvas.height);
         ctx.stroke();
+
         ctx.beginPath();
         ctx.moveTo(canvas.width/2 + 150, 0);
         ctx.lineTo(canvas.width/2 + 150, canvas.height);
         ctx.stroke();
 
+        updatePlayerPosition();
         drawPlayer();
+
         drawObstacles();
         updateObstacles();
 
+        // Increase difficulty slowly
+        speed += 0.002;
+
         score++;
         document.getElementById("score").innerText = "Score: " + score;
-    } else {
-        gameOver();
     }
 
     requestAnimationFrame(loop);
